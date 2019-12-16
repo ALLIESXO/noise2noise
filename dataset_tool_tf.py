@@ -60,15 +60,15 @@ def main():
         sys.exit(1)
 
     print ('Loading image list from %s' % args.input_dir)
-    images = sorted(glob.glob(os.path.join(args.input_dir, '*.JPEG')))
-    images += sorted(glob.glob(os.path.join(args.input_dir, '*.jpg')))
-    images += sorted(glob.glob(os.path.join(args.input_dir, '*.png')))
+    images = sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.JPEG', recursive=True))
+    images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.png', recursive=True))
+    images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.jpg', recursive=True))
     np.random.RandomState(0x1234f00d).shuffle(images)
 
     #----------------------------------------------------------
     outdir = os.path.dirname(args.out)
     os.makedirs(outdir, exist_ok=True)
-    writer = tf.python_io.TFRecordWriter(args.out)
+    writer = tf.io.TFRecordWriter(args.out)
     for (idx, imgname) in enumerate(images):
         print (idx, imgname)
         image = load_image(imgname)

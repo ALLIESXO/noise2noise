@@ -46,6 +46,14 @@ class AugmentPoisson:
         chi = 30.0
         return np.random.poisson(chi*(x+0.5))/chi - 0.5
 
+# Monte Carlo Renderings should already contain noise 
+class AugmentMonteCarlo:
+    def __init__(self):
+        pass
+
+    def do_not_add_noise(self):
+        pass
+
 def compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate):
     ramp_down_start_iter = iteration_count * (1 - ramp_down_perc)
     if i >= ramp_down_start_iter:

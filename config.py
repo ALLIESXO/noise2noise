@@ -48,6 +48,9 @@ poisson_noise_config = dnnlib.EasyDict(
     func_name='train.AugmentPoisson',
     lam_max=50.0
 )
+monte_carlo_noise_config = dnnlib.EasyDict(
+    func_name='train.AugmentMonteCarlo'
+)
 
 # ------------------------------------------------------------------------------------------
 # Preconfigured validation sets
@@ -60,6 +63,7 @@ datasets = {
 default_validation_config = datasets['kodak']
 
 corruption_types = {
+    'monte_carlo': monte_carlo_noise_config,
     'gaussian': gaussian_noise_config,
     'poisson': poisson_noise_config
 }
