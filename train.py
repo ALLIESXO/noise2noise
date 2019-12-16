@@ -51,7 +51,7 @@ class AugmentMonteCarlo:
     def __init__(self):
         pass
 
-    def do_not_add_noise(self):
+    def add_train_noise_tf(self):
         pass
 
 def compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate):
