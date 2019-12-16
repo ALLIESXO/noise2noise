@@ -111,7 +111,7 @@ def train(
             denoised = net_gpu.get_output_for(noisy_input_split[gpu])
 
             if noise2noise:
-                meansq_error = tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised))
+                meansq_error = tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised)/tf.square(tf.stop_gradient(denoised+0.01)))
             else:
                 meansq_error = tf.reduce_mean(tf.square(clean_target_split[gpu] - denoised))
             # Create an autosummary that will average over all GPUs
