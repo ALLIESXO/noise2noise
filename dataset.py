@@ -37,13 +37,17 @@ def random_crop_noised_clean(x, add_noise):
     cropped = tf.random_crop(resize_small_image(x), size=[3, 256, 256]) / 255.0 - 0.5
     return (add_noise(cropped), add_noise(cropped), cropped)
 
+def random_crop_monte_carlo(x):
+    cropped = cropped = tf.random_crop(resize_small_image(x), size=[3, 256, 256]) / 255.0 - 0.5
+    return cropped
+
 def create_dataset(train_tfrecords, minibatch_size, add_noise):
     print ('Setting up dataset source from', train_tfrecords)
     buffer_mb   = 256
     num_threads = 2
     dset = tf.data.TFRecordDataset(train_tfrecords, compression_type='', buffer_size=buffer_mb<<20)
-    dset = dset.repeat()
-    buf_size = 1000
+    dset = dset.repeat()  # .repeat(count=None), repeats this dataset indefinitely amount of times 
+    buf_size = 1000 
     dset = dset.prefetch(buf_size)
     dset = dset.map(parse_tfrecord_tf, num_parallel_calls=num_threads)
     dset = dset.shuffle(buffer_size=buf_size)
@@ -52,3 +56,18 @@ def create_dataset(train_tfrecords, minibatch_size, add_noise):
     it = dset.make_one_shot_iterator()
     return it
 
+def create_monte_carlo_dataset(train_tfrecords, minibatch_size, add_noise):
+    print ('Setting up dataset source from', train_tfrecords)
+    buffer_mb   = 256
+    num_threads = 2
+    dset = tf.data.TFRecordDataset(train_tfrecords, compression_type='', buffer_size=buffer_mb<<20)
+    # https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/data/TFRecordDataset
+    #dset = dset.repeat()
+    buf_size = 2
+    dset = dset.prefetch(buf_size) # not sure if I need to comment it out or not.
+    dset = dset.map(parse_tfrecord_tf, num_parallel_calls=num_threads)
+    #dset = dset.shuffle(buffer_size=buf_size) 
+    dset = dset.map(lambda x: random_crop_monte_carlo(x))
+    dset = dset.batch(minibatch_size)
+    it = dset.make_one_shot_iterator()
+    return it

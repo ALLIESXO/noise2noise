@@ -63,7 +63,7 @@ def main():
     images = sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.JPEG', recursive=True))
     images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.png', recursive=True))
     images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.jpg', recursive=True))
-    np.random.RandomState(0x1234f00d).shuffle(images)
+    #np.random.RandomState(0x1234f00d).shuffle(images)
 
     #----------------------------------------------------------
     outdir = os.path.dirname(args.out)

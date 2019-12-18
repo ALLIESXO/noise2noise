@@ -18,7 +18,7 @@ import config
 
 from util import save_image, save_snapshot
 from validation import ValidationSet
-from dataset import create_dataset
+from dataset import create_dataset, create_monte_carlo_dataset
 
 class AugmentGaussian:
     def __init__(self, validation_stddev, train_stddev_rng_range):
@@ -86,7 +86,10 @@ def train(
     # Initialize TensorFlow graph and session using good default settings
     tfutil.init_tf(config.tf_config)
 
-    dataset_iter = create_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf)
+    if isinstance(noise_augmenter, AugmentMonteCarlo):
+        dataset_iter = create_monte_carlo_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf)
+    else:
+        dataset_iter = create_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf)
 
     # Construct the network using the Network helper class and a function defined in config.net_config
     with tf.device("/gpu:0"):
@@ -98,11 +101,19 @@ def train(
     print('Building TensorFlow graph...')
     with tf.name_scope('Inputs'), tf.device("/cpu:0"):
         lrate_in        = tf.placeholder(tf.float32, name='lrate_in', shape=[])
+        
+        if isinstance(noise_augmenter, AugmentMonteCarlo):
+            noisy_input = dataset_iter.get_next()
+            noisy_target = dataset_iter.get_next()
 
-        noisy_input, noisy_target, clean_target = dataset_iter.get_next()
-        noisy_input_split = tf.split(noisy_input, submit_config.num_gpus)
-        noisy_target_split = tf.split(noisy_target, submit_config.num_gpus)
-        clean_target_split = tf.split(clean_target, submit_config.num_gpus)
+            noisy_input_split = tf.split(noisy_input, submit_config.num_gpus)
+            noisy_target_split = tf.split(noisy_target, submit_config.num_gpus)
+        else:
+            noisy_input, noisy_target, clean_target = dataset_iter.get_next()
+
+            noisy_input_split = tf.split(noisy_input, submit_config.num_gpus)
+            noisy_target_split = tf.split(noisy_target, submit_config.num_gpus)
+            clean_target_split = tf.split(clean_target, submit_config.num_gpus)
 
     # Define the loss function using the Optimizer helper class, this will take care of multi GPU
     opt = tflib.Optimizer(learning_rate=lrate_in, **config.optimizer_config)
@@ -144,7 +155,10 @@ def train(
             time_total = ctx.get_time_since_start()
 
             # Evaluate 'x' to draw a batch of inputs
-            [source_mb, target_mb] = tfutil.run([noisy_input, clean_target])
+            if isinstance(noise_augmenter, AugmentMonteCarlo):
+                [source_mb, target_mb] = tfutil.run([noisy_input, noisy_target])
+            else:
+                [source_mb, target_mb] = tfutil.run([noisy_input, clean_target])
             denoised = net.run(source_mb)
             save_image(submit_config, denoised[0], "img_{0}_y_pred.png".format(i))
             save_image(submit_config, target_mb[0], "img_{0}_y.png".format(i))
