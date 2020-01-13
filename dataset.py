@@ -63,7 +63,7 @@ def create_monte_carlo_dataset(train_tfrecords, minibatch_size, add_noise):
     dset = tf.data.TFRecordDataset(train_tfrecords, compression_type='', buffer_size=buffer_mb<<20)
     # https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/data/TFRecordDataset
     #dset = dset.repeat()
-    buf_size = 2
+    buf_size = 1
     dset = dset.prefetch(buf_size) # not sure if I need to comment it out or not.
     dset = dset.map(parse_tfrecord_tf, num_parallel_calls=num_threads)
     #dset = dset.shuffle(buffer_size=buf_size) 

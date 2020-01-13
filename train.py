@@ -135,7 +135,7 @@ def train(
     train_step = opt.apply_updates()
 
     # Create a log file for Tensorboard
-    summary_log = tf.summary.FileWriter(submit_config.run_dir)
+    summary_log = tf.compat.v1.summary.FileWriter(submit_config.run_dir)
     summary_log.add_graph(tf.get_default_graph())
 
     print('Training...')
@@ -149,7 +149,7 @@ def train(
             break
 
         # Dump training status
-        if i % eval_interval == 0:
+        if i % eval_interval != 0:
 
             time_train = ctx.get_time_since_last_update()
             time_total = ctx.get_time_since_start()
@@ -162,7 +162,7 @@ def train(
             denoised = net.run(source_mb)
             save_image(submit_config, denoised[0], "img_{0}_y_pred.png".format(i))
             save_image(submit_config, target_mb[0], "img_{0}_y.png".format(i))
-            save_image(submit_config, source_mb[0], "img_{0}_x_aug.png".format(i))
+            save_image(submit_config, source_mb[0], "img_{0}_x.png".format(i))
 
             validation_set.evaluate(net, i, noise_augmenter.add_validation_noise_np)
 
@@ -173,7 +173,7 @@ def train(
                 autosummary('Timing/sec_per_iter', time_train / eval_interval),
                 autosummary('Timing/maintenance_sec', time_maintenance)))
 
-            dnnlib.tflib.autosummary.save_summaries(summary_log, i)
+            #dnnlib.tflib.autosummary.save_summaries(summary_log, i)
             ctx.update(loss='run %d' % submit_config.run_id, cur_epoch=i, max_epoch=iteration_count)
             time_maintenance = ctx.get_last_update_interval() - time_train
 
