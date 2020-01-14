@@ -149,7 +149,7 @@ def train(
             break
 
         # Dump training status
-        if i % eval_interval != 0:
+        if i % eval_interval == 0:
 
             time_train = ctx.get_time_since_last_update()
             time_total = ctx.get_time_since_start()
@@ -173,7 +173,7 @@ def train(
                 autosummary('Timing/sec_per_iter', time_train / eval_interval),
                 autosummary('Timing/maintenance_sec', time_maintenance)))
 
-            #dnnlib.tflib.autosummary.save_summaries(summary_log, i)
+            dnnlib.tflib.autosummary.save_summaries(summary_log, i)
             ctx.update(loss='run %d' % submit_config.run_id, cur_epoch=i, max_epoch=iteration_count)
             time_maintenance = ctx.get_last_update_interval() - time_train
 
