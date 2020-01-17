@@ -86,6 +86,8 @@ def train(
     # Initialize TensorFlow graph and session using good default settings
     tfutil.init_tf(config.tf_config)
 
+    iterations_per_epoch = sum(1 for _ in tf.python_io.tf_record_iterator(train_tfrecords))
+
     if isinstance(noise_augmenter, AugmentMonteCarlo):
         dataset_iter = create_monte_carlo_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf)
     else:
@@ -103,8 +105,7 @@ def train(
         lrate_in        = tf.placeholder(tf.float32, name='lrate_in', shape=[])
         
         if isinstance(noise_augmenter, AugmentMonteCarlo):
-            noisy_input = dataset_iter.get_next()
-            noisy_target = dataset_iter.get_next()
+            noisy_input, noisy_target = dataset_iter.get_next()
 
             noisy_input_split = tf.split(noisy_input, submit_config.num_gpus)
             noisy_target_split = tf.split(noisy_target, submit_config.num_gpus)
@@ -175,6 +176,7 @@ def train(
 
             dnnlib.tflib.autosummary.save_summaries(summary_log, i)
             ctx.update(loss='run %d' % submit_config.run_id, cur_epoch=i, max_epoch=iteration_count)
+            print("Current epoch: " + str(i/iterations_per_epoch))
             time_maintenance = ctx.get_last_update_interval() - time_train
 
         lrate =  compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate)

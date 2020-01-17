@@ -69,12 +69,16 @@ def main():
     outdir = os.path.dirname(args.out)
     os.makedirs(outdir, exist_ok=True)
     writer = tf.io.TFRecordWriter(args.out)
-    for (idx, imgname) in enumerate(images):
-        print (idx, imgname)
+    for imgname, imgname2 in zip(images[0::2], images[1::2]):
+        print (imgname)
+        print (imgname2)
         image = load_image(imgname)
+        image2 = load_image(imgname2)
         feature = {
           'shape': shape_feature(image.shape),
-          'data': bytes_feature(tf.compat.as_bytes(image.tostring()))
+          'data': bytes_feature(tf.compat.as_bytes(image.tostring())),
+          'shape2': shape_feature(image2.shape),
+          'data2': bytes_feature(tf.compat.as_bytes(image2.tostring()))
         }
         example = tf.train.Example(features=tf.train.Features(feature=feature))
         writer.write(example.SerializeToString())
