@@ -50,6 +50,7 @@ def main():
     )
     parser.add_argument("--input-dir", help="Directory containing ImageNet images")
     parser.add_argument("--out", help="Filename of the output tfrecords file")
+    parser.add_argument("--nofeatures", help="Ignores Albedo and Normal Image in the given subdirectories")
     args = parser.parse_args()
 
     if args.input_dir is None:
@@ -58,30 +59,65 @@ def main():
     if args.out is None:
         print ('Must specify output filename with --out')
         sys.exit(1)
+    if args.nofeatures is not None:
+        print ('Ignoring Features')
 
     print ('Loading image list from %s' % args.input_dir)
     images = sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.JPEG', recursive=True))
     images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.png', recursive=True))
     images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.jpg', recursive=True))
-    #np.random.RandomState(0x1234f00d).shuffle(images)
+
+    if args.nofeatures is not None: # ignore all paths which contain albedo or normal as information 
+        for image in images:
+            if "normal" in image:
+                images.remove(image)
+            if "albedo" in image:
+                images.remove(image)
+            print("Removed " + str(image) + " from tfRecord. (nofeatures)")
 
     #----------------------------------------------------------
     outdir = os.path.dirname(args.out)
     os.makedirs(outdir, exist_ok=True)
     writer = tf.io.TFRecordWriter(args.out)
-    for imgname, imgname2 in zip(images[0::2], images[1::2]):
-        print (imgname)
-        print (imgname2)
-        image = load_image(imgname)
-        image2 = load_image(imgname2)
-        feature = {
-          'shape': shape_feature(image.shape),
-          'data': bytes_feature(tf.compat.as_bytes(image.tostring())),
-          'shape2': shape_feature(image2.shape),
-          'data2': bytes_feature(tf.compat.as_bytes(image2.tostring()))
-        }
-        example = tf.train.Example(features=tf.train.Features(feature=feature))
-        writer.write(example.SerializeToString())
+
+    if args.nofeatures is not None: # ignore the featurees 
+        for imgname, imgname2 in zip(images[0::2], images[1::2]):
+            print(str(imgname))
+            print(str(imgname2))
+            image = load_image(imgname)
+            image2 = load_image(imgname2)
+            feature = {
+            'shape': shape_feature(image.shape),
+            'data': bytes_feature(tf.compat.as_bytes(image.tostring())),
+            'shape2': shape_feature(image2.shape),
+            'data2': bytes_feature(tf.compat.as_bytes(image2.tostring()))
+            }
+            example = tf.train.Example(features=tf.train.Features(feature=feature))
+            writer.write(example.SerializeToString())
+    
+    else: 
+        for noisy_img1, noisy_img2, albedo_img, normal_img in zip(images[0::4], images[1::4], images[2::4], images[3::4]):
+            print(str(noisy_img1))
+            print(str(noisy_img2))
+            print(str(albedo_img))
+            print(str(normal_img))
+            print("#######################################")
+            image = load_image(noisy_img1)
+            image2 = load_image(noisy_img2)
+            image3 = load_image(albedo_img)
+            image4 = load_image(normal_img)
+            feature = {
+            'shape': shape_feature(image.shape),
+            'data': bytes_feature(tf.compat.as_bytes(image.tostring())),
+            'shape2': shape_feature(image2.shape),
+            'data2': bytes_feature(tf.compat.as_bytes(image2.tostring())),
+            'shape': shape_feature(image3.shape),
+            'data': bytes_feature(tf.compat.as_bytes(image3.tostring())),
+            'shape': shape_feature(image4.shape),
+            'data': bytes_feature(tf.compat.as_bytes(image4.tostring()))
+            }
+            example = tf.train.Example(features=tf.train.Features(feature=feature))
+            writer.write(example.SerializeToString())
 
     print ('Dataset statistics:')
     print ('  Formats:')
