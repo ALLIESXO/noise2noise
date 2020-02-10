@@ -66,6 +66,7 @@ def compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate)
     return learning_rate
 
 def train(
+    useFeatures: bool,
     submit_config: dnnlib.SubmitConfig,
     iteration_count: int,
     eval_interval: int,
@@ -89,7 +90,7 @@ def train(
     iterations_per_epoch = sum(1 for _ in tf.python_io.tf_record_iterator(train_tfrecords))
 
     if isinstance(noise_augmenter, AugmentMonteCarlo):
-        dataset_iter = create_monte_carlo_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf)
+        dataset_iter = create_monte_carlo_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf, useFeatures)
     else:
         dataset_iter = create_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf)
 

@@ -72,9 +72,10 @@ corruption_types = {
 # ------------------------------------------------------------------------------------------
 
 train_config = dnnlib.EasyDict(
+    useFeatures=False,
     iteration_count=5000000,
     eval_interval=10000,
-    minibatch_size=16,
+    minibatch_size=4,
     run_func_name="train.train",
     learning_rate=0.0003,
     ramp_down_perc=0.3,
@@ -143,6 +144,9 @@ if __name__ == "__main__":
             submit_config.run_desc += "-n2n"
         else:
             submit_config.run_desc += "-n2c"
+        
+        if  args.useFeatures is not None:
+            train_config.useFeatures = True
 
         if 'train_tfrecords' in args and args.train_tfrecords is not None:
             train_config.train_tfrecords = submit.get_path_from_template(args.train_tfrecords)
@@ -196,6 +200,7 @@ if __name__ == "__main__":
     parser_train.add_argument('--noise', default='gaussian', help='Type of noise corruption (one of: gaussian, poisson)')
     parser_train.add_argument('--long-train', default=False, help='Train for a very long time (500k iterations or 500k*minibatch image)')
     parser_train.add_argument('--train-tfrecords', help='Filename of the training set tfrecords file')
+    parser_train.add_argument('--useFeatures', help='Adds normal and albedo features to training of the network')
     parser_train.set_defaults(func=train)
 
     parser_validate = subparsers.add_parser('validate', help='Run a set of images through the network')
