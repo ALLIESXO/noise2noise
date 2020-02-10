@@ -102,19 +102,22 @@ def main():
             print(str(albedo_img))
             print(str(normal_img))
             print("#######################################")
-            image = load_image(noisy_img1)
-            image2 = load_image(noisy_img2)
-            image3 = load_image(albedo_img)
-            image4 = load_image(normal_img)
+            noisy_img1 = load_image(noisy_img1)
+            noisy_img2 = load_image(noisy_img2)
+            albedoFeature = load_image(albedo_img)
+            normalFeature = load_image(normal_img)
+
+            noisy_img1 = np.append(noisy_img1,albedoFeature,axis=0)
+            noisy_img1 = np.append(noisy_img1,normalFeature,axis=0)
+            print(noisy_img1.shape)
+            noisy_img2 = np.append(noisy_img2,albedoFeature,axis=0)
+            noisy_img2 = np.append(noisy_img2,normalFeature,axis=0)
+
             feature = {
-            'shape': shape_feature(image.shape),
-            'data': bytes_feature(tf.compat.as_bytes(image.tostring())),
-            'shape2': shape_feature(image2.shape),
-            'data2': bytes_feature(tf.compat.as_bytes(image2.tostring())),
-            'shape': shape_feature(image3.shape),
-            'data': bytes_feature(tf.compat.as_bytes(image3.tostring())),
-            'shape': shape_feature(image4.shape),
-            'data': bytes_feature(tf.compat.as_bytes(image4.tostring()))
+            'shape': shape_feature(noisy_img1.shape),
+            'data': bytes_feature(tf.compat.as_bytes(noisy_img1.tostring())),
+            'shape2': shape_feature(noisy_img2.shape),
+            'data2': bytes_feature(tf.compat.as_bytes(noisy_img2.tostring())),
             }
             example = tf.train.Example(features=tf.train.Features(feature=feature))
             writer.write(example.SerializeToString())
