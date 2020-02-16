@@ -110,9 +110,10 @@ def main():
             noisy_img1 = np.append(noisy_img1,albedoFeature,axis=0)
             noisy_img1 = np.append(noisy_img1,normalFeature,axis=0)
             print(noisy_img1.shape)
-            noisy_img2 = np.append(noisy_img2,albedoFeature,axis=0)
-            noisy_img2 = np.append(noisy_img2,normalFeature,axis=0)
-
+            #noisy_img2 = np.append(noisy_img2,albedoFeature,axis=0)
+            #noisy_img2 = np.append(noisy_img2,normalFeature,axis=0)
+            print(noisy_img2.shape)
+            
             feature = {
             'shape': shape_feature(noisy_img1.shape),
             'data': bytes_feature(tf.compat.as_bytes(noisy_img1.tostring())),
