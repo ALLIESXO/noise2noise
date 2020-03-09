@@ -55,12 +55,13 @@ monte_carlo_noise_config = dnnlib.EasyDict(
 # ------------------------------------------------------------------------------------------
 # Preconfigured validation sets
 datasets = {
+    'monte_carlo': dnnlib.EasyDict(dataset_dir'datasets/monte_carlo')
     'kodak':  dnnlib.EasyDict(dataset_dir='datasets/kodak'),
     'bsd300': dnnlib.EasyDict(dataset_dir='datasets/bsd300'),
     'set14':  dnnlib.EasyDict(dataset_dir='datasets/set14')
 }
 
-default_validation_config = datasets['kodak']
+default_validation_config = datasets['monte_carlo']
 
 corruption_types = {
     'monte_carlo': monte_carlo_noise_config,

@@ -37,6 +37,7 @@ class ValidationSet:
         images = []
         for fname in fnames:
             try:
+                #TODO: Change for monte carlo validation
                 im = PIL.Image.open(fname).convert('RGB')
                 arr = np.array(im, dtype=np.float32)
                 reshaped = arr.transpose([2, 0, 1]) / 255.0 - 0.5
@@ -45,6 +46,12 @@ class ValidationSet:
                 print ('Skipping file', fname, 'due to error: ', e)
         self.images = images
 
+    #TODO: rewrite method for monte carlo validation sets 
+    # original image needs to be the 1000 samples per pixel image 
+    # noisy image needs to be the 9th dimensional noisy image 
+    # perhaps creating a tuple of those would be a good idea 
+    # instead of evaluating a whole set you can use to evaluate subsets (10 pairs)
+    # randomly each time an evaluation begins 
     def evaluate(self, net, iteration, noise_func):
         avg_psnr = 0.0
         for idx in range(len(self.images)):
