@@ -182,3 +182,10 @@ The expected average PSNR on the validation set (named `test_db_clamped` in code
 Noise-to-noise training is enabled by default for the MRI case.  To use noise-to-clean training, edit `config_mri.py` and change `corrupt_targets=True` to `corrupt_targets=False`.
 
 Training for 300 epochs takes roughly 9 hours on an NVIDIA Titan V GPU.
+
+### Monte Carlo Denoising
+
+Dont forget datasets/monte_carlo/ folder! 
+
+Run with: 
+python config.py --desc='-test' train --train-tfrecords=datasets/32spp-features.tfrecords --noise=monte_carlo --useFeatures=True

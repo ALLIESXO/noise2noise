@@ -46,23 +46,21 @@ class ValidationSet:
         import glob
 
         fnames = sorted(glob.iglob(os.path.join(dataset_dir) + '**/*.png', recursive=True))
-        filter(filter_clean_with_features, fnames)
+        fnames = list(filter(filter_clean_with_features, fnames))
+        for fname in fnames: 
+            print(fname)
         # now the first path is always the clean one and the last three paths are the noisy with feature paths
         if len(fnames) == 0:
-            print ('\nERROR: No files found using the following glob pattern:', os.path.join(args.input_dir), '\n')
+            print ('\nERROR: No files found using the following glob pattern:', os.path.join(dataset_dir), '\n')
             sys.exit(1)
 
         images = []
-        for clean, noisy_img, albedo_img, normal_img in zip(images[0::4], images[1::4], images[2::4], images[3::4]):
+        for clean, noisy_img, albedo_img, normal_img in zip(fnames[0::4], fnames[1::4], fnames[2::4], fnames[3::4]):
             try:
-                #TODO: Change for monte carlo validation
-                #read clean image
                 clean = load_image(clean)
-
-                # read noisy image and features
                 noisy = load_image(noisy_img)
                 albedo = load_image(albedo_img)
-                normal_img = load_image(normal_img)
+                normal = load_image(normal_img)
                 noisy = np.append(noisy,albedo,axis=0) 
                 noisy = np.append(noisy,normal,axis=0)
                 reshaped = (clean, noisy)
@@ -71,12 +69,6 @@ class ValidationSet:
                 print ('Skipping file due to error: ', e)
         self.images = images
 
-    #TODO: rewrite method for monte carlo validation sets 
-    # original image needs to be the 1000 samples per pixel image 
-    # noisy image needs to be the 9th dimensional noisy image 
-    # perhaps creating a tuple of those would be a good idea 
-    # instead of evaluating a whole set you can use to evaluate subsets (10 pairs)
-    # randomly each time an evaluation begins 
 
     def evaluate(self, net, iteration, noise_func):
         avg_psnr = 0.0
@@ -99,7 +91,7 @@ class ValidationSet:
             cur_psnr = 10.0 * np.log10((255*255)/(s / (w*h*3)))
             avg_psnr += cur_psnr
 
-            util.save_image(self.submit_config, pred255, "img_{0}_val_{1}_pred.png".format(iteration, idx))
+            #util.save_image(self.submit_config, pred255, "img_{0}_val_{1}_pred.png".format(iteration, idx))
 
             if iteration == 0:
                 util.save_image(self.submit_config, orig_img, "img_{0}_val_{1}_orig.png".format(iteration, idx))
