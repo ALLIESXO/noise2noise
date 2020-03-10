@@ -19,6 +19,23 @@ from dnnlib.tflib.autosummary import autosummary
 import util
 import config
 
+def filter_clean_with_features(path) -> bool:
+    if "clean" in path:
+        if "albedo" in path:
+            return False
+        elif "normal" in path:
+            return False
+        else: 
+            return True
+
+    return True
+
+def load_image(fname):
+    im = PIL.Image.open(fname)
+    arr = np.array(im.convert('RGB'), dtype=np.float32)
+    assert len(arr.shape) == 3
+    return arr.transpose([2, 0, 1]) / 255.0 - 0.5
+
 class ValidationSet:
     def __init__(self, submit_config):
         self.images = None
@@ -28,22 +45,30 @@ class ValidationSet:
     def load(self, dataset_dir):
         import glob
 
-        abs_dirname = os.path.join(submit.get_path_from_template(dataset_dir), '*')
-        fnames = sorted(glob.glob(abs_dirname))
+        fnames = sorted(glob.iglob(os.path.join(dataset_dir) + '**/*.png', recursive=True))
+        filter(filter_clean_with_features, fnames)
+        # now the first path is always the clean one and the last three paths are the noisy with feature paths
         if len(fnames) == 0:
-            print ('\nERROR: No files found using the following glob pattern:', abs_dirname, '\n')
+            print ('\nERROR: No files found using the following glob pattern:', os.path.join(args.input_dir), '\n')
             sys.exit(1)
 
         images = []
-        for fname in fnames:
+        for clean, noisy_img, albedo_img, normal_img in zip(images[0::4], images[1::4], images[2::4], images[3::4]):
             try:
                 #TODO: Change for monte carlo validation
-                im = PIL.Image.open(fname).convert('RGB')
-                arr = np.array(im, dtype=np.float32)
-                reshaped = arr.transpose([2, 0, 1]) / 255.0 - 0.5
-                images.append(reshaped)
+                #read clean image
+                clean = load_image(clean)
+
+                # read noisy image and features
+                noisy = load_image(noisy_img)
+                albedo = load_image(albedo_img)
+                normal_img = load_image(normal_img)
+                noisy = np.append(noisy,albedo,axis=0) 
+                noisy = np.append(noisy,normal,axis=0)
+                reshaped = (clean, noisy)
+                images.append(reshaped) 
             except OSError as e:
-                print ('Skipping file', fname, 'due to error: ', e)
+                print ('Skipping file due to error: ', e)
         self.images = images
 
     #TODO: rewrite method for monte carlo validation sets 
@@ -52,14 +77,19 @@ class ValidationSet:
     # perhaps creating a tuple of those would be a good idea 
     # instead of evaluating a whole set you can use to evaluate subsets (10 pairs)
     # randomly each time an evaluation begins 
+
     def evaluate(self, net, iteration, noise_func):
         avg_psnr = 0.0
+        # self.images should be a tuple of images -> fst::noisy image with 9th dimension ; snd::
         for idx in range(len(self.images)):
-            orig_img = self.images[idx]
+            img_pair = self.images[idx]
+            noisy_img = img_pair[1]
+            orig_img = img_pair[0]
+
             w = orig_img.shape[2]
             h = orig_img.shape[1]
 
-            noisy_img = noise_func(orig_img)
+            #noisy_img = noise_func(orig_img)
             pred255 = util.infer_image(net, noisy_img)
             orig255 = util.clip_to_uint8(orig_img)
             assert (pred255.shape[2] == w and pred255.shape[1] == h)
@@ -92,6 +122,7 @@ def validate(submit_config: dnnlib.SubmitConfig, noise: dict, dataset: dict, net
         validation_set.evaluate(net, 0, noise_augmenter.add_validation_noise_np)
     ctx.close()
 
+#TODO: add infer image for monte carlo options 
 def infer_image(network_snapshot: str, image: str, out_image: str):
     tfutil.init_tf(config.tf_config)
     net = util.load_snapshot(network_snapshot)

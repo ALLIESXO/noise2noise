@@ -80,7 +80,7 @@ def main():
     os.makedirs(outdir, exist_ok=True)
     writer = tf.io.TFRecordWriter(args.out)
 
-    if args.nofeatures is not None: # ignore the featurees 
+    if args.nofeatures is not None: # use features: albedo & normal 
         for imgname, imgname2 in zip(images[0::2], images[1::2]):
             print(str(imgname))
             print(str(imgname2))
