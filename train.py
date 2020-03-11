@@ -107,7 +107,6 @@ def train(
         
         if isinstance(noise_augmenter, AugmentMonteCarlo):
             noisy_input, noisy_target = dataset_iter.get_next()
-
             noisy_input_split = tf.split(noisy_input, submit_config.num_gpus)
             noisy_target_split = tf.split(noisy_target, submit_config.num_gpus)
         else:
@@ -158,13 +157,18 @@ def train(
 
             # Evaluate 'x' to draw a batch of inputs
             if isinstance(noise_augmenter, AugmentMonteCarlo):
+                # a list of tuples with the given pairs 
                 [source_mb, target_mb] = tfutil.run([noisy_input, noisy_target])
             else:
                 [source_mb, target_mb] = tfutil.run([noisy_input, clean_target])
             denoised = net.run(source_mb)
-            save_image(submit_config, denoised[0], "img_{0}_y_pred.png".format(i))
+            testwF = source_mb[0]
+            testwF = testwF[0:3,:,:]
+            # the first pair of a batch is being saved 
+            save_image(submit_config, denoised[0], "img_{0}_y_denoised.png".format(i))
             save_image(submit_config, target_mb[0], "img_{0}_y.png".format(i))
             save_image(submit_config, source_mb[0], "img_{0}_x.png".format(i))
+            save_image(submit_config, testwF, "img_{0}_x_withoutFeatures.png".format(i))
 
             validation_set.evaluate(net, i, noise_augmenter.add_validation_noise_np)
 
