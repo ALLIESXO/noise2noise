@@ -98,7 +98,7 @@ class ValidationSet:
                 util.save_image(self.submit_config, noisy_img, "img_{0}_val_{1}_noisy.png".format(iteration, idx))
         avg_psnr /= len(self.images)
         print ('Average PSNR: %.2f' % autosummary('PSNR_avg_psnr', avg_psnr))
-
+ 
 
 def validate(submit_config: dnnlib.SubmitConfig, noise: dict, dataset: dict, network_snapshot: str):
     noise_augmenter = dnnlib.util.call_func_by_name(**noise)

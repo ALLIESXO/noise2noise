@@ -74,11 +74,11 @@ corruption_types = {
 
 train_config = dnnlib.EasyDict(
     useFeatures=False,
-    iteration_count=5000000,
-    eval_interval=1000,
+    iteration_count=450000,
+    eval_interval=100,
     minibatch_size=4,
     run_func_name="train.train",
-    learning_rate=0.0003,
+    learning_rate=0.003,
     ramp_down_perc=0.3,
     noise=gaussian_noise_config,
 #    noise=poisson_noise_config,

@@ -87,7 +87,7 @@ def train(
     # Initialize TensorFlow graph and session using good default settings
     tfutil.init_tf(config.tf_config)
 
-    iterations_per_epoch = sum(1 for _ in tf.python_io.tf_record_iterator(train_tfrecords))
+    iterations_per_epoch = sum(1 for _ in tf.python_io.tf_record_iterator(train_tfrecords))/minibatch_size
 
     if isinstance(noise_augmenter, AugmentMonteCarlo):
         dataset_iter = create_monte_carlo_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf, useFeatures)
@@ -126,7 +126,7 @@ def train(
             denoised = net_gpu.get_output_for(noisy_input_split[gpu])
 
             if noise2noise:
-                meansq_error = tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised)/tf.square(tf.stop_gradient(denoised+0.01)))
+                meansq_error = tf.square(noisy_target_split[gpu] - denoised)/tf.square(tf.stop_gradient(denoised+0.01))
             else:
                 meansq_error = tf.reduce_mean(tf.square(clean_target_split[gpu] - denoised))
             # Create an autosummary that will average over all GPUs
@@ -179,9 +179,9 @@ def train(
                 autosummary('Timing/sec_per_iter', time_train / eval_interval),
                 autosummary('Timing/maintenance_sec', time_maintenance)))
 
-            #dnnlib.tflib.autosummary.save_summaries(summary_log, i)
+            dnnlib.tflib.autosummary.save_summaries(summary_log, i)
             ctx.update(loss='run %d' % submit_config.run_id, cur_epoch=i, max_epoch=iteration_count)
-            print("Current epoch: " + str(i/iterations_per_epoch))
+            print("Current epoch: " + str(round(i/iterations_per_epoch)))
             time_maintenance = ctx.get_last_update_interval() - time_train
 
         lrate =  compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate)

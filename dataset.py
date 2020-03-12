@@ -92,8 +92,9 @@ def create_monte_carlo_dataset(train_tfrecords, minibatch_size, add_noise, useFe
         dset = dset.map(parse_tfrecord_tf_with_features, num_parallel_calls=num_threads)
     else:
         dset = dset.map(parse_tfrecord_tf, num_parallel_calls=num_threads)
-    #dset = dset.shuffle(buffer_size=buf_size) 
+    
     dset = dset.map(lambda x,y: random_crop_monte_carlo(x,y, useFeatures))
+    dset = dset.shuffle(buffer_size=buf_size) 
     dset = dset.batch(minibatch_size)
     it = dset.make_one_shot_iterator()
     return it
