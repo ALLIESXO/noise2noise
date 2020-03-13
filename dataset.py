@@ -49,16 +49,16 @@ def resize_small_image(x):
      )
 
 def random_crop_noised_clean(x, add_noise):
-    cropped = tf.random_crop(resize_small_image(x), size=[3, 256, 256]) / 255.0 - 0.5
+    cropped = tf.random_crop(resize_small_image(x), size=[3, 256, 256]) / 255.0
     return (add_noise(cropped), add_noise(cropped), cropped)
 
 def random_crop_monte_carlo(x,y, useFeatures):
     if useFeatures is True:
-        cropped_noisy_input = tf.random_crop(resize_small_image(x), size=[9, 256, 256]) / 255.0 - 0.5
-        cropped_noisy_target = tf.random_crop(resize_small_image(y), size=[3, 256, 256]) / 255.0 - 0.5
+        cropped_noisy_input = tf.random_crop(resize_small_image(x), size=[9, 256, 256]) / 255.0 
+        cropped_noisy_target = tf.random_crop(resize_small_image(y), size=[3, 256, 256]) / 255.0 
     else: 
-        cropped_noisy_input = tf.random_crop(resize_small_image(x), size=[3, 256, 256]) / 255.0 - 0.5
-        cropped_noisy_target = tf.random_crop(resize_small_image(y), size=[3, 256, 256]) / 255.0 - 0.5
+        cropped_noisy_input = tf.random_crop(resize_small_image(x), size=[3, 256, 256]) / 255.0 
+        cropped_noisy_target = tf.random_crop(resize_small_image(y), size=[3, 256, 256]) / 255.0 
 
     return (cropped_noisy_input,cropped_noisy_target)
 

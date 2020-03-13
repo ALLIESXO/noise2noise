@@ -20,6 +20,9 @@ from util import save_image, save_snapshot
 from validation import ValidationSet
 from dataset import create_dataset, create_monte_carlo_dataset
 
+def reinhald_tone_mapping(V):
+   return np.exp(v/(1+v))
+
 class AugmentGaussian:
     def __init__(self, validation_stddev, train_stddev_rng_range):
         self.validation_stddev = validation_stddev

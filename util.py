@@ -42,7 +42,7 @@ def save_image(submit_config, img_t, filename):
     PIL.Image.fromarray(t, 'RGB').save(os.path.join(submit_config.run_dir, filename))
 
 def clip_to_uint8(arr):
-    return np.clip((arr + 0.5) * 255.0 + 0.5, 0, 255).astype(np.uint8)
+    return np.clip((arr ) * 255.0 , 0, 255).astype(np.uint8)
 
 def crop_np(img, x, y, w, h):
     return img[:, y:h, x:w]
