@@ -34,7 +34,7 @@ def load_image(fname):
     im = PIL.Image.open(fname)
     arr = np.array(im.convert('RGB'), dtype=np.float32)
     assert len(arr.shape) == 3
-    return arr.transpose([2, 0, 1]) / 255.0 - 0.5
+    return arr.transpose([2, 0, 1]) / 255.0
 
 class ValidationSet:
     def __init__(self, submit_config):
@@ -72,7 +72,7 @@ class ValidationSet:
 
     def evaluate(self, net, iteration, noise_func):
         avg_psnr = 0.0
-        # self.images should be a tuple of images -> fst::noisy image with 9th dimension ; snd::
+        # self.images should be a tuple of images -> snd::noisy image with 9th dimension ; fst::clean
         for idx in range(len(self.images)):
             img_pair = self.images[idx]
             noisy_img = img_pair[1]
@@ -84,20 +84,26 @@ class ValidationSet:
             #noisy_img = noise_func(orig_img)
             pred255 = util.infer_image(net, noisy_img)
             orig255 = util.clip_to_uint8(orig_img)
+            noisy_img = util.clip_to_uint8(noisy_img[0:3,:,:])
             assert (pred255.shape[2] == w and pred255.shape[1] == h)
 
             sqerr = np.square(orig255.astype(np.float32) - pred255.astype(np.float32))
             s = np.sum(sqerr)
             cur_psnr = 10.0 * np.log10((255*255)/(s / (w*h*3)))
             avg_psnr += cur_psnr
+           
+            # TODO: fix meansq_error
+            meansq_error = np.mean(np.square(noisy_img.astype(np.float32) - pred255.astype(np.float32))/np.square(pred255.astype(np.float32)+0.01))
 
-            #util.save_image(self.submit_config, pred255, "img_{0}_val_{1}_pred.png".format(iteration, idx))
+            util.save_image(self.submit_config, pred255, "img_{0}_val_{1}_pred.png".format(iteration, idx))
 
             if iteration == 0:
                 util.save_image(self.submit_config, orig_img, "img_{0}_val_{1}_orig.png".format(iteration, idx))
                 util.save_image(self.submit_config, noisy_img, "img_{0}_val_{1}_noisy.png".format(iteration, idx))
         avg_psnr /= len(self.images)
         print ('Average PSNR: %.2f' % autosummary('PSNR_avg_psnr', avg_psnr))
+        print(meansq_error)
+        print ('Validation Loss: %.2f' % autosummary('Validation_Loss', meansq_error))
  
 
 def validate(submit_config: dnnlib.SubmitConfig, noise: dict, dataset: dict, network_snapshot: str):

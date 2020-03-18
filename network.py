@@ -110,5 +110,8 @@ def autoencoder(x, width=256, height=256, **_kwargs):
     n = conv_lr('dec_conv1b', n, 32)
 
     n = conv('dec_conv1', n, 3, gain=1.0)
+    n = tf.math.sigmoid(n)
+#   n = tf.maximum(n,0)
+#   n = tf.math.pow((n/(n+1)),(1/2.2), name="reinhald_tone_mapping")
 
     return n

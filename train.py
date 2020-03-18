@@ -20,8 +20,6 @@ from util import save_image, save_snapshot
 from validation import ValidationSet
 from dataset import create_dataset, create_monte_carlo_dataset
 
-def reinhald_tone_mapping(V):
-   return np.exp(v/(1+v))
 
 class AugmentGaussian:
     def __init__(self, validation_stddev, train_stddev_rng_range):
@@ -129,7 +127,7 @@ def train(
             denoised = net_gpu.get_output_for(noisy_input_split[gpu])
 
             if noise2noise:
-                meansq_error = tf.square(noisy_target_split[gpu] - denoised)/tf.square(tf.stop_gradient(denoised+0.01))
+                meansq_error = tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised)/tf.square(tf.stop_gradient(denoised+0.01)))
             else:
                 meansq_error = tf.reduce_mean(tf.square(clean_target_split[gpu] - denoised))
             # Create an autosummary that will average over all GPUs
@@ -164,7 +162,11 @@ def train(
                 [source_mb, target_mb] = tfutil.run([noisy_input, noisy_target])
             else:
                 [source_mb, target_mb] = tfutil.run([noisy_input, clean_target])
+
             denoised = net.run(source_mb)
+            print("#####################################################")
+            print(denoised[0])
+
             testwF = source_mb[0]
             testwF = testwF[0:3,:,:]
             # the first pair of a batch is being saved 
