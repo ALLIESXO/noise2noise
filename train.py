@@ -16,7 +16,7 @@ import dnnlib.util as util
 
 import config
 
-from util import save_image, save_snapshot
+from util import save_image, save_snapshot, save_image_hdri
 from validation import ValidationSet
 from dataset import create_dataset, create_monte_carlo_dataset
 
@@ -68,6 +68,7 @@ def compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate)
 
 def train(
     useFeatures: bool,
+    hdr: bool,
     submit_config: dnnlib.SubmitConfig,
     iteration_count: int,
     eval_interval: int,
@@ -91,7 +92,7 @@ def train(
     iterations_per_epoch = sum(1 for _ in tf.python_io.tf_record_iterator(train_tfrecords))/minibatch_size
 
     if isinstance(noise_augmenter, AugmentMonteCarlo):
-        dataset_iter = create_monte_carlo_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf, useFeatures)
+        dataset_iter = create_monte_carlo_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf, useFeatures, hdr)
     else:
         dataset_iter = create_dataset(train_tfrecords, minibatch_size, noise_augmenter.add_train_noise_tf)
 
@@ -127,7 +128,7 @@ def train(
             denoised = net_gpu.get_output_for(noisy_input_split[gpu])
 
             if noise2noise:
-                meansq_error = tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised)/tf.square(tf.stop_gradient(denoised+0.01)))
+                meansq_error =  tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised))/tf.stop_gradient(tf.square(denoised+0.01))
             else:
                 meansq_error = tf.reduce_mean(tf.square(clean_target_split[gpu] - denoised))
             # Create an autosummary that will average over all GPUs
@@ -164,16 +165,33 @@ def train(
                 [source_mb, target_mb] = tfutil.run([noisy_input, clean_target])
 
             denoised = net.run(source_mb)
-            print("#####################################################")
+            print("#######################INPUT##############################")
+            print(source_mb[0])
+            print("#######################TARGET##############################")
+            print(target_mb[0])
+            print("#######################DENOISED##############################")
             print(denoised[0])
 
             testwF = source_mb[0]
-            testwF = testwF[0:3,:,:]
+            noisy_input_image = testwF[0:3,:,:]    # beware of variable name!
+            albedo = testwF[3:6,:,:]
+            normal = testwF[6:9,:,:]
             # the first pair of a batch is being saved 
-            save_image(submit_config, denoised[0], "img_{0}_y_denoised.png".format(i))
-            save_image(submit_config, target_mb[0], "img_{0}_y.png".format(i))
-            save_image(submit_config, source_mb[0], "img_{0}_x.png".format(i))
-            save_image(submit_config, testwF, "img_{0}_x_withoutFeatures.png".format(i))
+            img = denoised[0]
+
+            if hdr is True:
+                tonemapped_img = np.power(img/(1+img),(1/2.2))
+                tonemapped_img = np.clip(tonemapped_img,0,1)
+
+                save_image_hdri(submit_config, tonemapped_img, "img_{0}_y_denoised.exr".format(i))
+                save_image_hdri(submit_config, target_mb[0], "img_{0}_y.exr".format(i))
+                save_image_hdri(submit_config, noisy_input_image, "img_{0}_x_withoutFeatures.exr".format(i))
+                #save_image_hdri(submit_config, albedo, "img_{0}_x_albedo.exr".format(i))
+                #save_image_hdri(submit_config, normal, "img_{0}_x_normal.exr".format(i))
+            else:
+                save_image(submit_config, denoised[0], "img_{0}_y_denoised.png".format(i))
+                save_image(submit_config, target_mb[0], "img_{0}_y.png".format(i))
+                save_image(submit_config, noisy_input_image, "img_{0}_x_withoutFeatures.png".format(i))
 
             validation_set.evaluate(net, i, noise_augmenter.add_validation_noise_np)
 

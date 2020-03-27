@@ -10,14 +10,31 @@ import os
 import sys
 import argparse
 import tensorflow as tf
-
+import cv2
 import PIL.Image
 import numpy as np
-
+import imageio
+imageio.plugins.freeimage.download()
 from collections import defaultdict
 
 size_stats = defaultdict(int)
 format_stats = defaultdict(int)
+
+def reinhald_tonemap(img):
+    tonemapped_img = np.power(img/(1+img),(1/2.2))
+    return np.clip(tonemapped_img, 0, 1)
+
+def load_hdri(fname):
+    global format_stats, size_stats
+    im = imageio.imread(fname)
+    im = im[:,:,:3] # is now RGB
+    #im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    if (im.shape[0] < 256 or im.shape[1] < 256):
+        size_stats['< 256x256'] += 1
+    else:
+        size_stats['>= 256x256'] += 1
+    assert len(im.shape) == 3
+    return im.transpose([2, 0, 1])
 
 def load_image(fname):
     global format_stats, size_stats
@@ -51,6 +68,7 @@ def main():
     parser.add_argument("--input-dir", help="Directory containing ImageNet images")
     parser.add_argument("--out", help="Filename of the output tfrecords file")
     parser.add_argument("--nofeatures", help="Ignores Albedo and Normal Image in the given subdirectories")
+    parser.add_argument("--hdr", help="Handles hdr files")
     args = parser.parse_args()
 
     if args.input_dir is None:
@@ -61,11 +79,16 @@ def main():
         sys.exit(1)
     if args.nofeatures is not None:
         print ('Ignoring Features')
+    if args.hdr is not None:
+        print ('HDR files are being used.')
 
     print ('Loading image list from %s' % args.input_dir)
-    images = sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.JPEG', recursive=True))
-    images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.png', recursive=True))
-    images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.jpg', recursive=True))
+    if args.hdr is None:
+        images = sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.JPEG', recursive=True))
+        images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.png', recursive=True))
+        images += sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.jpg', recursive=True))
+    else:
+        images = sorted(glob.iglob(os.path.join(args.input_dir) + '**/*.exr', recursive=True))
 
     if args.nofeatures is not None: # ignore all paths which contain albedo or normal as information 
         for image in images:
@@ -80,20 +103,20 @@ def main():
     os.makedirs(outdir, exist_ok=True)
     writer = tf.io.TFRecordWriter(args.out)
 
-    if args.nofeatures is not None: # use features: albedo & normal 
-        for imgname, imgname2 in zip(images[0::2], images[1::2]):
-            print(str(imgname))
-            print(str(imgname2))
-            image = load_image(imgname)
-            image2 = load_image(imgname2)
-            feature = {
-            'shape': shape_feature(image.shape),
-            'data': bytes_feature(tf.compat.as_bytes(image.tostring())),
-            'shape2': shape_feature(image2.shape),
-            'data2': bytes_feature(tf.compat.as_bytes(image2.tostring()))
-            }
-            example = tf.train.Example(features=tf.train.Features(feature=feature))
-            writer.write(example.SerializeToString())
+    if args.nofeatures is not None:
+            for imgname, imgname2 in zip(images[0::2], images[1::2]):
+                print(str(imgname))
+                print(str(imgname2))
+                image = load_image(imgname)
+                image2 = load_image(imgname2)
+                feature = {
+                'shape': shape_feature(image.shape),
+                'data': bytes_feature(tf.compat.as_bytes(image.tostring())),
+                'shape2': shape_feature(image2.shape),
+                'data2': bytes_feature(tf.compat.as_bytes(image2.tostring()))
+                }
+                example = tf.train.Example(features=tf.train.Features(feature=feature))
+                writer.write(example.SerializeToString())
     
     else: 
         for noisy_img1, noisy_img2, albedo_img, normal_img in zip(images[0::4], images[1::4], images[2::4], images[3::4]):
@@ -102,18 +125,22 @@ def main():
             print(str(albedo_img))
             print(str(normal_img))
             print("#######################################")
-            noisy_img1 = load_image(noisy_img1)
-            noisy_img2 = load_image(noisy_img2)
-            albedoFeature = load_image(albedo_img)
-            normalFeature = load_image(normal_img)
+            if args.hdr is None:
+                noisy_img1 = load_image(noisy_img1)
+                noisy_img2 = load_image(noisy_img2)
+                albedoFeature = load_image(albedo_img)
+                normalFeature = load_image(normal_img)
+            else:
+                noisy_img1 = load_hdri(noisy_img1)
+                noisy_img2 = load_hdri(noisy_img2)
+                albedoFeature = load_hdri(albedo_img)
+                normalFeature = load_hdri(normal_img)
 
             noisy_img1 = np.append(noisy_img1,albedoFeature,axis=0)
             noisy_img1 = np.append(noisy_img1,normalFeature,axis=0)
             print(noisy_img1.shape)
-            #noisy_img2 = np.append(noisy_img2,albedoFeature,axis=0)
-            #noisy_img2 = np.append(noisy_img2,normalFeature,axis=0)
             print(noisy_img2.shape)
-            
+
             feature = {
             'shape': shape_feature(noisy_img1.shape),
             'data': bytes_feature(tf.compat.as_bytes(noisy_img1.tostring())),

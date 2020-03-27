@@ -83,6 +83,7 @@ class ValidationSet:
 
             #noisy_img = noise_func(orig_img)
             pred255 = util.infer_image(net, noisy_img)
+            pred255 = util.clip_to_uint8(pred255)
             orig255 = util.clip_to_uint8(orig_img)
             noisy_img = util.clip_to_uint8(noisy_img[0:3,:,:])
             assert (pred255.shape[2] == w and pred255.shape[1] == h)
@@ -91,9 +92,8 @@ class ValidationSet:
             s = np.sum(sqerr)
             cur_psnr = 10.0 * np.log10((255*255)/(s / (w*h*3)))
             avg_psnr += cur_psnr
-           
-            # TODO: fix meansq_error
-            meansq_error = np.mean(np.square(noisy_img.astype(np.float32) - pred255.astype(np.float32))/np.square(pred255.astype(np.float32)+0.01))
+
+            #meansq_error = np.mean(np.square(orig255.astype(np.float32) - pred255.astype(np.float32))/np.square(pred255.astype(np.float32)+0.01))
 
             util.save_image(self.submit_config, pred255, "img_{0}_val_{1}_pred.png".format(iteration, idx))
 
@@ -102,8 +102,7 @@ class ValidationSet:
                 util.save_image(self.submit_config, noisy_img, "img_{0}_val_{1}_noisy.png".format(iteration, idx))
         avg_psnr /= len(self.images)
         print ('Average PSNR: %.2f' % autosummary('PSNR_avg_psnr', avg_psnr))
-        print(meansq_error)
-        print ('Validation Loss: %.2f' % autosummary('Validation_Loss', meansq_error))
+        #print ('Validation Loss: %.2f' % autosummary('Validation_Loss', meansq_error))
  
 
 def validate(submit_config: dnnlib.SubmitConfig, noise: dict, dataset: dict, network_snapshot: str):

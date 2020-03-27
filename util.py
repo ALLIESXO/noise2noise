@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pickle
 import PIL.Image
-
+import cv2
 import dnnlib.submission.submit as submit
 
 # save_pkl, load_pkl are used by the mri code to save datasets
@@ -32,6 +32,11 @@ def load_snapshot(fname):
     with open(fname, "rb") as f:
         return pickle.load(f)
 
+
+def save_image_hdri(submit_config, img_t, filename):
+    t = img_t.transpose([1, 2, 0])  # [RGB, H, W] -> [H, W, RGB]
+    t = cv2.cvtColor(t, cv2.COLOR_RGB2BGR)
+    cv2.imwrite(os.path.join(submit_config.run_dir, filename),t, [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_FLOAT])
 
 def save_image(submit_config, img_t, filename):
     t = img_t.transpose([1, 2, 0])  # [RGB, H, W] -> [H, W, RGB]

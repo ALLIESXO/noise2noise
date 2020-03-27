@@ -13,8 +13,8 @@ def parse_tfrecord_tf_with_features(record):
         'shape2': tf.FixedLenFeature([3], tf.int64),
         'data2': tf.FixedLenFeature([], tf.string)})
 
-    image1 = tf.decode_raw(features['data'], tf.uint8)
-    image2 = tf.decode_raw(features['data2'], tf.uint8)
+    image1 = tf.decode_raw(features['data'], tf.float32)
+    image2 = tf.decode_raw(features['data2'], tf.float32)
 
     return (tf.reshape(image1, features['shape']),tf.reshape(image2, features['shape2']))
 
@@ -52,7 +52,14 @@ def random_crop_noised_clean(x, add_noise):
     cropped = tf.random_crop(resize_small_image(x), size=[3, 256, 256]) / 255.0
     return (add_noise(cropped), add_noise(cropped), cropped)
 
-def random_crop_monte_carlo(x,y, useFeatures):
+def random_crop_monte_carlo(x,y, useFeatures, hdr):
+    if hdr is True:
+        #x = tf.clip_by_value(x, 0 ,x)
+        cropped_noisy_input = tf.random_crop(resize_small_image(x), size=[9, 256, 256])
+        #y = tf.clip_by_value(y,0 ,y)
+        cropped_noisy_target = tf.random_crop(resize_small_image(y), size=[3, 256, 256]) 
+        return (cropped_noisy_input,cropped_noisy_target)
+
     if useFeatures is True:
         cropped_noisy_input = tf.random_crop(resize_small_image(x), size=[9, 256, 256]) / 255.0 
         cropped_noisy_target = tf.random_crop(resize_small_image(y), size=[3, 256, 256]) / 255.0 
@@ -77,7 +84,7 @@ def create_dataset(train_tfrecords, minibatch_size, add_noise):
     it = dset.make_one_shot_iterator()
     return it
 
-def create_monte_carlo_dataset(train_tfrecords, minibatch_size, add_noise, useFeatures):
+def create_monte_carlo_dataset(train_tfrecords, minibatch_size, add_noise, useFeatures, hdr):
     print ('Setting up dataset source from', train_tfrecords)
     buffer_mb   = 256
     num_threads = 2
@@ -93,7 +100,7 @@ def create_monte_carlo_dataset(train_tfrecords, minibatch_size, add_noise, useFe
     else:
         dset = dset.map(parse_tfrecord_tf, num_parallel_calls=num_threads)
     
-    dset = dset.map(lambda x,y: random_crop_monte_carlo(x,y, useFeatures))
+    dset = dset.map(lambda x,y: random_crop_monte_carlo(x,y, useFeatures, hdr))
     dset = dset.shuffle(buffer_size=buf_size) 
     dset = dset.batch(minibatch_size)
     it = dset.make_one_shot_iterator()
