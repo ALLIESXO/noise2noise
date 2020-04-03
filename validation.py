@@ -10,6 +10,8 @@ import sys
 import numpy as np
 import PIL.Image
 import tensorflow as tf
+import imageio, cv2
+imageio.plugins.freeimage.download()
 
 import dnnlib
 import dnnlib.submission.submit as submit
@@ -31,10 +33,17 @@ def filter_clean_with_features(path) -> bool:
     return True
 
 def load_image(fname):
-    im = PIL.Image.open(fname)
-    arr = np.array(im.convert('RGB'), dtype=np.float32)
-    assert len(arr.shape) == 3
-    return arr.transpose([2, 0, 1]) / 255.0
+    if ".exr" in fname:
+        im = imageio.imread(fname)
+        im = im[:,:,:3] # remove alpha channel
+        arr = np.array(im, dtype=np.float32)
+        assert len(arr.shape) == 3
+        return arr.transpose([2, 0, 1]) # hwc to chw  
+    else:
+        im = PIL.Image.open(fname)
+        arr = np.array(im.convert('RGB'), dtype=np.float32)
+        assert len(arr.shape) == 3
+        return arr.transpose([2, 0, 1]) / 255.0
 
 class ValidationSet:
     def __init__(self, submit_config):
@@ -44,11 +53,16 @@ class ValidationSet:
 
     def load(self, dataset_dir):
         import glob
-
+        exrVal = False
         fnames = sorted(glob.iglob(os.path.join(dataset_dir) + '**/*.png', recursive=True))
+        fnames = fnames + sorted(glob.iglob(os.path.join(dataset_dir) + '**/*.exr', recursive=True))
         fnames = list(filter(filter_clean_with_features, fnames))
         for fname in fnames: 
             print(fname)
+            print(exrVal)
+            if ".exr" in fname:
+                exrVal = True
+                
         # now the first path is always the clean one and the last three paths are the noisy with feature paths
         if len(fnames) == 0:
             print ('\nERROR: No files found using the following glob pattern:', os.path.join(dataset_dir), '\n')
@@ -63,7 +77,7 @@ class ValidationSet:
                 normal = load_image(normal_img)
                 noisy = np.append(noisy,albedo,axis=0) 
                 noisy = np.append(noisy,normal,axis=0)
-                reshaped = (clean, noisy)
+                reshaped = (clean, noisy, exrVal)
                 images.append(reshaped) 
             except OSError as e:
                 print ('Skipping file due to error: ', e)
@@ -75,23 +89,33 @@ class ValidationSet:
         # self.images should be a tuple of images -> snd::noisy image with 9th dimension ; fst::clean
         for idx in range(len(self.images)):
             img_pair = self.images[idx]
+            exrVal = img_pair[2]
             noisy_img = img_pair[1]
             orig_img = img_pair[0]
 
             w = orig_img.shape[2]
             h = orig_img.shape[1]
 
-            #noisy_img = noise_func(orig_img)
-            pred255 = util.infer_image(net, noisy_img)
-            pred255 = util.clip_to_uint8(pred255)
-            orig255 = util.clip_to_uint8(orig_img)
-            noisy_img = util.clip_to_uint8(noisy_img[0:3,:,:])
-            assert (pred255.shape[2] == w and pred255.shape[1] == h)
+            orig255 = orig_img
+            #exr image prediction
+            pred255 = util.infer_image(net,noisy_img)
+            if exrVal is False:
+                #pred255 = util.infer_image(net, noisy_img)
+                pred255 = util.clip_to_uint8(pred255)
+                orig255 = util.clip_to_uint8(orig_img)
+                noisy_img = util.clip_to_uint8(noisy_img[0:3,:,:])
 
-            sqerr = np.square(orig255.astype(np.float32) - pred255.astype(np.float32))
-            s = np.sum(sqerr)
-            cur_psnr = 10.0 * np.log10((255*255)/(s / (w*h*3)))
-            avg_psnr += cur_psnr
+            # the best would be if the input x is already tonemapped 
+            assert (pred255.shape[2] == w and pred255.shape[1] == h)
+            
+            if exrVal is False:
+                sqerr = np.square(orig255.astype(np.float32) - pred255.astype(np.float32))
+                s = np.sum(sqerr)
+                cur_psnr = 10.0 * np.log10((255*255)/(s / (w*h*3)))
+                avg_psnr += cur_psnr
+            else:
+                cur_psnr = cv2.PSNR(pred255, orig_img) # TODO: try this variant else just map them to png images 
+                avg_psnr += cur_psnr
 
             #meansq_error = np.mean(np.square(orig255.astype(np.float32) - pred255.astype(np.float32))/np.square(pred255.astype(np.float32)+0.01))
 

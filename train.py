@@ -128,7 +128,7 @@ def train(
             denoised = net_gpu.get_output_for(noisy_input_split[gpu])
 
             if noise2noise:
-                meansq_error =  tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised))/tf.stop_gradient(tf.square(denoised+0.01))
+                meansq_error = tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised)) #/tf.stop_gradient(tf.square(denoised+0.01)))
             else:
                 meansq_error = tf.reduce_mean(tf.square(clean_target_split[gpu] - denoised))
             # Create an autosummary that will average over all GPUs
@@ -177,13 +177,10 @@ def train(
             albedo = testwF[3:6,:,:]
             normal = testwF[6:9,:,:]
             # the first pair of a batch is being saved 
-            img = denoised[0]
+            #img = denoised[0]
 
             if hdr is True:
-                tonemapped_img = np.power(img/(1+img),(1/2.2))
-                tonemapped_img = np.clip(tonemapped_img,0,1)
-
-                save_image_hdri(submit_config, tonemapped_img, "img_{0}_y_denoised.exr".format(i))
+                save_image_hdri(submit_config, denoised[0], "img_{0}_y_denoised.exr".format(i))
                 save_image_hdri(submit_config, target_mb[0], "img_{0}_y.exr".format(i))
                 save_image_hdri(submit_config, noisy_input_image, "img_{0}_x_withoutFeatures.exr".format(i))
                 #save_image_hdri(submit_config, albedo, "img_{0}_x_albedo.exr".format(i))

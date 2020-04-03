@@ -8,9 +8,9 @@ import cv2
 
 
 def main():
-    original = cv2.imread("C:\\Users\\Alex\\Desktop\\1.png")
-    contrast = cv2.imread("C:\\Users\\Alex\\Desktop\\2.png",1)
-    print(psnr(original,contrast))
+    original = cv2.imread("D:\\Bachelorarbeit\\noise2noise\\datasets\\monte_carlo\\0_2.3camp\\clean\\Image0001.png")
+    contrast = cv2.imread("D:\\Bachelorarbeit\\noise2noise\\datasets\\monte_carlo\\0_2.3camp\\noisy\\Image0001.png")
+    #print(psnr(original,contrast))
     psnr_val = cv2.PSNR(original, contrast)
     print(psnr_val)
 
@@ -53,8 +53,8 @@ def psnr(img1, img2):
 
 def testPSNR(): 
     avg_psnr = 0
-    image1 = load_image("C:\\Users\\Alex\\Desktop\\Intel_denoise.png")
-    image2 = load_image("C:\\Users\\Alex\\Desktop\\original.png")
+    image1 = load_image("D:\\Bachelorarbeit\\noise2noise\\datasets\\monte_carlo\\0_2.3camp\\clean\\Image0001.png")
+    image2 = load_image("D:\\Bachelorarbeit\\noise2noise\\datasets\\monte_carlo\\0_2.3camp\\noisy\\Image0001.png")
     
     w = image1.shape[2]
     h = image1.shape[1]
