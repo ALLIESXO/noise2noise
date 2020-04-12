@@ -21,6 +21,13 @@ from dnnlib.tflib.autosummary import autosummary
 import util
 import config
 
+def exrToPng(image):
+    image = image.transpose([1, 2, 0])
+    reinhard = cv2.createTonemapReinhard(1.5, 0,0,0)
+    LDR_image = reinhard.process(image)
+    LDR_image = LDR_image.transpose([2, 0, 1])
+    return util.clip_to_uint8(LDR_image)
+
 def filter_clean_with_features(path) -> bool:
     if "clean" in path:
         if "albedo" in path:
@@ -58,8 +65,6 @@ class ValidationSet:
         fnames = fnames + sorted(glob.iglob(os.path.join(dataset_dir) + '**/*.exr', recursive=True))
         fnames = list(filter(filter_clean_with_features, fnames))
         for fname in fnames: 
-            print(fname)
-            print(exrVal)
             if ".exr" in fname:
                 exrVal = True
                 
@@ -75,7 +80,7 @@ class ValidationSet:
                 noisy = load_image(noisy_img)
                 albedo = load_image(albedo_img)
                 normal = load_image(normal_img)
-                noisy = np.append(noisy,albedo,axis=0) 
+                noisy = np.append(noisy,albedo,axis=0)
                 noisy = np.append(noisy,normal,axis=0)
                 reshaped = (clean, noisy, exrVal)
                 images.append(reshaped) 
@@ -105,17 +110,18 @@ class ValidationSet:
                 orig255 = util.clip_to_uint8(orig_img)
                 noisy_img = util.clip_to_uint8(noisy_img[0:3,:,:])
 
+            else:
+                pred255 = exrToPng(pred255)
+                orig255 = exrToPng(orig255)
+                noisy_img = exrToPng(noisy_img[0:3,:,:])
+
             # the best would be if the input x is already tonemapped 
             assert (pred255.shape[2] == w and pred255.shape[1] == h)
             
-            if exrVal is False:
-                sqerr = np.square(orig255.astype(np.float32) - pred255.astype(np.float32))
-                s = np.sum(sqerr)
-                cur_psnr = 10.0 * np.log10((255*255)/(s / (w*h*3)))
-                avg_psnr += cur_psnr
-            else:
-                cur_psnr = cv2.PSNR(pred255, orig_img) # TODO: try this variant else just map them to png images 
-                avg_psnr += cur_psnr
+            sqerr = np.square(orig255.astype(np.float32) - pred255.astype(np.float32))
+            s = np.sum(sqerr)
+            cur_psnr = 10.0 * np.log10((255*255)/(s / (w*h*3)))
+            avg_psnr += cur_psnr
 
             #meansq_error = np.mean(np.square(orig255.astype(np.float32) - pred255.astype(np.float32))/np.square(pred255.astype(np.float32)+0.01))
 

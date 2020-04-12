@@ -50,7 +50,7 @@ def upscale2d(x, factor=2):
 
 def conv_lr(name, x, fmaps):
     with tf.variable_scope(name):
-        return tf.nn.leaky_relu(conv2d_bias(x, fmaps, 3), alpha=0.1)
+        return tf.layers.batch_normalization(tf.nn.leaky_relu(conv2d_bias(x, fmaps, 3), alpha=0.1)) #TODO <---- try batch normalization
 
 def conv(name, x, fmaps, gain):
     with tf.variable_scope(name):
@@ -111,7 +111,5 @@ def autoencoder(x, width=256, height=256, **_kwargs):
 
     n = conv('dec_conv1', n, 3, gain=1.0)
 #   n = tf.math.sigmoid(n)
-#   n = tf.maximum(n,0)
-#   n = tf.math.pow((n/(n+1)),(1/2.2), name="reinhald_tone_mapping")
 
     return n

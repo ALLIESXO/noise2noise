@@ -62,4 +62,4 @@ def infer_image(net, img):
     if pw!=0 or ph!=0:
         padded_img  = np.pad(img, ((0,0),(0,ph),(0,pw)), 'reflect')
     inferred = net.run(np.expand_dims(padded_img, axis=0), width=w+pw, height=h+ph)
-    return clip_to_uint8(crop_np(inferred[0], 0, 0, w, h))
+    return crop_np(inferred[0], 0, 0, w, h)
