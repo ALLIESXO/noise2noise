@@ -128,7 +128,7 @@ def train(
             denoised = net_gpu.get_output_for(noisy_input_split[gpu])
 
             if noise2noise:
-                meansq_error = tf.reduce_mean(tf.square(denoised - noisy_target_split[gpu])/tf.stop_gradient(tf.square(denoised+0.01)))
+                meansq_error = tf.reduce_mean(tf.square(noisy_target_split[gpu] - denoised)/tf.square(tf.stop_gradient(denoised+0.01)))
             else:
                 meansq_error = tf.reduce_mean(tf.square(clean_target_split[gpu] - denoised))
             # Create an autosummary that will average over all GPUs
@@ -165,10 +165,10 @@ def train(
                 [source_mb, target_mb] = tfutil.run([noisy_input, clean_target])
 
             denoised = net.run(source_mb)
-            print("#######################INPUT##############################")
-            print(source_mb[0])
-            print("#######################TARGET##############################")
-            print(target_mb[0])
+            #print("#######################INPUT##############################")
+            #print(source_mb[0])
+            #print("#######################TARGET##############################")
+            #print(target_mb[0])
             print("#######################DENOISED##############################")
             print(denoised[0])
 
@@ -183,8 +183,8 @@ def train(
                 save_image_hdri(submit_config, denoised[0], "img_{0}_y_denoised.exr".format(i))
                 save_image_hdri(submit_config, target_mb[0], "img_{0}_y.exr".format(i))
                 save_image_hdri(submit_config, noisy_input_image, "img_{0}_x_withoutFeatures.exr".format(i))
-                #save_image_hdri(submit_config, albedo, "img_{0}_x_albedo.exr".format(i))
-                #save_image_hdri(submit_config, normal, "img_{0}_x_normal.exr".format(i))
+                save_image_hdri(submit_config, albedo, "img_{0}_x_albedo.exr".format(i))
+                save_image_hdri(submit_config, normal, "img_{0}_x_normal.exr".format(i))
             else:
                 save_image(submit_config, denoised[0], "img_{0}_y_denoised.png".format(i))
                 save_image(submit_config, target_mb[0], "img_{0}_y.png".format(i))

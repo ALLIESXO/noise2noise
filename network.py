@@ -50,7 +50,7 @@ def upscale2d(x, factor=2):
 
 def conv_lr(name, x, fmaps):
     with tf.variable_scope(name):
-        return tf.layers.batch_normalization(tf.nn.leaky_relu(conv2d_bias(x, fmaps, 3), alpha=0.1)) #TODO <---- try batch normalization
+        return tf.layers.batch_normalization(tf.nn.leaky_relu(conv2d_bias(x, fmaps, 3), alpha=0.1)) 
 
 def conv(name, x, fmaps, gain):
     with tf.variable_scope(name):
