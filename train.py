@@ -7,6 +7,7 @@
 
 import tensorflow as tf
 import numpy as np
+import math 
 
 import dnnlib
 import dnnlib.tflib as tflib
@@ -65,6 +66,12 @@ def compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate)
         smooth = (0.5+np.cos(t * np.pi)/2)**2
         return learning_rate * smooth
     return learning_rate
+
+def compute_step_decay_lrate(i, learning_rate):
+    drop = 0.55
+    iterations_drop = 40000
+    lrate = learning_rate * math.pow(drop, math.floor((1+i)/iterations_drop))
+    return lrate 
 
 def train(
     useFeatures: bool,
@@ -183,8 +190,8 @@ def train(
                 save_image_hdri(submit_config, denoised[0], "img_{0}_y_denoised.exr".format(i))
                 save_image_hdri(submit_config, target_mb[0], "img_{0}_y.exr".format(i))
                 save_image_hdri(submit_config, noisy_input_image, "img_{0}_x_withoutFeatures.exr".format(i))
-                save_image_hdri(submit_config, albedo, "img_{0}_x_albedo.exr".format(i))
-                save_image_hdri(submit_config, normal, "img_{0}_x_normal.exr".format(i))
+               # save_image_hdri(submit_config, albedo, "img_{0}_x_albedo.exr".format(i))
+               # save_image_hdri(submit_config, normal, "img_{0}_x_normal.exr".format(i))
             else:
                 save_image(submit_config, denoised[0], "img_{0}_y_denoised.png".format(i))
                 save_image(submit_config, target_mb[0], "img_{0}_y.png".format(i))
@@ -204,7 +211,8 @@ def train(
             print("Current epoch: " + str(round(i/iterations_per_epoch)))
             time_maintenance = ctx.get_last_update_interval() - time_train
 
-        lrate =  compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate)
+        #lrate =  compute_ramped_down_lrate(i, iteration_count, ramp_down_perc, learning_rate)
+        lrate  = compute_step_decay_lrate(i, learning_rate)
         tfutil.run([train_step], {lrate_in: lrate})
 
     print("Elapsed time: {0}".format(util.format_time(ctx.get_time_since_start())))
