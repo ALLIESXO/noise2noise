@@ -37,9 +37,18 @@ This will install TensorFlow and other dependencies used in this project.
 
 This section explains how to prepare a dataset into a TFRecords file for use in training the Noise2Noise denoising network. The image denoising results presented in the Noise2Noise paper have been obtained using a network trained with the ImageNet validation set.
 
-### Monte Carlo Denoising
+## Monte Carlo Denoising
 
-Results will be posted here. 
+Training on high dynamic range images is by default very unstable.
+It is recommended to use batch normalization either before or after (will try both) each LeakyRelu. 
+Also adjusting the learning rate using step decay after few epochs improved stability.
+Following statistics show the training on non tonemapped inputs: 
+
+<img src="https://raw.githubusercontent.com/ALLIESXO/noise2noise--monte-carlo-images/master/images/avr_psnr_x_y.PNG" width="441" height="301">
+
+<img src="https://raw.githubusercontent.com/ALLIESXO/noise2noise--monte-carlo-images/master/images/Loss_x_y.PNG" width="473" height="308">
+
+<img src="https://raw.githubusercontent.com/ALLIESXO/noise2noise--monte-carlo-images/master/images/training_rate.PNG" width="437" height="304">
 
 Run with: 
 python config.py train --train-tfrecords=datasets/yourpath.tfrecords --noise=monte_carlo --useFeatures=True --hdr=True
