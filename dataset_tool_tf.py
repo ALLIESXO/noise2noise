@@ -36,6 +36,18 @@ def load_hdri(fname):
     assert len(im.shape) == 3
     return im.transpose([2, 0, 1])
 
+def load_depth(fname):
+    global format_stats, size_stats
+    im = imageio.imread(fname)
+    im = im[:,:,:1] # just take one dimension - there are 3 but are all the same
+    #im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    if (im.shape[0] < 256 or im.shape[1] < 256):
+        size_stats['< 256x256'] += 1
+    else:
+        size_stats['>= 256x256'] += 1
+    assert len(im.shape) == 3
+    return im.transpose([2, 0, 1]) # whc to chw
+
 def load_image(fname):
     global format_stats, size_stats
     im = PIL.Image.open(fname)
@@ -119,10 +131,11 @@ def main():
                 writer.write(example.SerializeToString())
     
     else: 
-        for noisy_img1, noisy_img2, albedo_img, normal_img in zip(images[0::4], images[1::4], images[2::4], images[3::4]):
+        for noisy_img1, noisy_img2, albedo_img, depth_img, normal_img in zip(images[0::5], images[1::5], images[2::5], images[3::5], images[4::5]):
             print(str(noisy_img1))
             print(str(noisy_img2))
             print(str(albedo_img))
+            print(str(depth_img))
             print(str(normal_img))
             print("#######################################")
             if args.hdr is None:
@@ -134,10 +147,12 @@ def main():
                 noisy_img1 = load_hdri(noisy_img1)
                 noisy_img2 = load_hdri(noisy_img2)
                 albedoFeature = load_hdri(albedo_img)
+                depthFeature  = load_depth(depth_img)
                 normalFeature = load_hdri(normal_img)
 
             noisy_img1 = np.append(noisy_img1,albedoFeature,axis=0)
             noisy_img1 = np.append(noisy_img1,normalFeature,axis=0)
+            noisy_img1 = np.append(noisy_img1,depthFeature, axis=0)
             print(noisy_img1.shape)
             print(noisy_img2.shape)
 

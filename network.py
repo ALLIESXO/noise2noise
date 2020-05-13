@@ -57,7 +57,7 @@ def conv(name, x, fmaps, gain):
         return conv2d_bias(x, fmaps, 3, gain)
 
 def autoencoder(x, width=256, height=256, **_kwargs):
-    x.set_shape([None, 9, height, width])
+    x.set_shape([None, 10, height, width])
 
     skips = [x]
 

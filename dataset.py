@@ -55,7 +55,7 @@ def random_crop_noised_clean(x, add_noise):
 def random_crop_monte_carlo(x,y, useFeatures, hdr):
     if hdr is True:
         #x = tf.clip_by_value(x, 0 ,x)
-        cropped_noisy_input = tf.random_crop(resize_small_image(x), size=[9, 256, 256])
+        cropped_noisy_input = tf.random_crop(resize_small_image(x), size=[10, 256, 256])
         #y = tf.clip_by_value(y,0 ,y)
         cropped_noisy_target = tf.random_crop(resize_small_image(y), size=[3, 256, 256]) 
         return (cropped_noisy_input,cropped_noisy_target)

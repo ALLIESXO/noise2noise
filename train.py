@@ -176,6 +176,7 @@ def train(
             noisy_input_image = testwF[0:3,:,:]    # beware of variable name!
             albedo = testwF[3:6,:,:]
             normal = testwF[6:9,:,:]
+            depth  = testwF[9:10,:,:]
             # the first pair of a batch is being saved 
             #img = denoised[0]
 
@@ -190,7 +191,7 @@ def train(
                 save_image(submit_config, target_mb[0], "img_{0}_y.png".format(i))
                 save_image(submit_config, noisy_input_image, "img_{0}_x_withoutFeatures.png".format(i))
 
-            validation_set.evaluate(net, i, noise_augmenter.add_validation_noise_np)
+            #validation_set.evaluate(net, i, noise_augmenter.add_validation_noise_np)
 
             print('iter %-10d time %-12s sec/eval %-7.1f sec/iter %-7.2f maintenance %-6.1f' % (
                 autosummary('Timing/iter', i),
